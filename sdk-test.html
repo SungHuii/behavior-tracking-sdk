@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SDK 테스트</title>
+  <script src="https://behavior-tracking-sdk.vercel.app/sdk.js"></script>
+</head>
+<body>
+<h1>Hello, SDK!</h1>
+<script>
+  BehaviorSDK.startTracking({
+    apiUrl: "https://your-backend.com/api/event-log",
+    projectKey: "abc-123"
+  });
+</script>
+</body>
+</html>
