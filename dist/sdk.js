@@ -2,21 +2,23 @@
 (function(window) {
   'use strict';
 
-  // SDK 전역 네임스페이스
   const SDK = {
-    init({ apiUrl, projectKey, scrollThreshold = 0.3 }) {
-      this.apiUrl     = apiUrl.replace(/\/+$/, ''); // 끝 / 제거
-      this.projectKey = projectKey;
+    async init({ apiUrl, projectKey, scrollThreshold = 0.3 }) {
+      this.apiUrl       = apiUrl.replace(/\/+$/, '');
+      this.projectKey   = projectKey;
+      this.scrollThresh = scrollThreshold;
+
+      await this._ensureVisitorId();
 
       this._sendEvent('page_view', { pageUrl: location.href });
       this._bindStayTime();
-      this._bindScrollDepth(scrollThreshold);
+      this._bindScrollDepth(this.scrollThresh);
       this._bindClicks();
     },
 
-    // 내부: 이벤트 전송 공통
     _sendEvent(eventType, payload = {}) {
       const visitorId = this._getVisitorId();
+      if (!visitorId) return;  // 발급 실패 시 무시
       const body = {
         projectId: this.projectKey,
         visitorId,
@@ -24,16 +26,14 @@
         occurredAt: new Date().toISOString(),
         ...payload
       };
-      // navigator.sendBeacon 지원 시 이걸 써도 좋습니다
       fetch(`${this.apiUrl}/api/logs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type':'application/json'},
         body: JSON.stringify(body),
         keepalive: true
       });
     },
 
-    // stay_time 바인딩
     _bindStayTime() {
       const start = Date.now();
       window.addEventListener('beforeunload', () => {
@@ -42,7 +42,6 @@
       });
     },
 
-    // scroll_depth 바인딩 (페이지 높이 대비 비율)
     _bindScrollDepth(threshold) {
       let fired = false;
       window.addEventListener('scroll', () => {
@@ -56,36 +55,43 @@
       });
     },
 
-    // click 바인딩 (버튼, a 태그 등 모두)
     _bindClicks() {
       document.addEventListener('click', e => {
-        const target = e.target;
-        const tag    = target.tagName.toLowerCase();
-        let label     = '';
-        if (target.id)     label = `#${target.id}`;
-        else if (target.name) label = `[name=${target.name}]`;
-        else if (target.innerText) label = target.innerText.trim().slice(0,20);
-
+        const t = e.target, tag = t.tagName.toLowerCase();
+        let label = t.id ? `#${t.id}` : t.name ? `[name=${t.name}]`
+                  : t.innerText?.trim().slice(0,20) || '';
         this._sendEvent('click', { element: tag, label });
       });
     },
 
-    // visitorId 발급/조회
-    _getVisitorId() {
+    async _ensureVisitorId() {
       const key = 'visitorId';
-      let vid = localStorage.getItem(key);
-      if (vid) return vid;
+      let vid = localStorage.getItem(key)
+             || document.cookie.match(/visitorId=([^;]+)/)?.[1];
 
-      // 없으면 동기 요청으로 visitor 생성 (간단 예시)
-      const resp = prompt('visitorId 없어서 생성된 키를 붙여주세요');
-      // → 실제론 fetch 동기 요청이나 sendBeacon을 쓰지 않습니다.
-      vid = resp || 'anonymous';
-      localStorage.setItem(key, vid);
-      return vid;
+      if (!vid) {
+        const res = await fetch(
+          `${this.apiUrl}/api/visitors?projectId=${this.projectKey}`,
+          { method: 'POST' }
+        );
+        if (!res.ok) {
+          console.warn('visitor 발급 실패', res.status);
+          return;
+        }
+        const { id } = await res.json();
+        vid = id;
+        localStorage.setItem(key, vid);
+        document.cookie = `visitorId=${vid}; path=/;`;
+      }
+    },
+
+    _getVisitorId() {
+      return localStorage.getItem('visitorId')
+          || document.cookie.match(/visitorId=([^;]+)/)?.[1]
+          || null;
     }
   };
 
-  // 전역에 노출
   window.BehaviorSDK = SDK;
 
 })(window);
