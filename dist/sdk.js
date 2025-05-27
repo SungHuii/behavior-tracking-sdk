@@ -26,10 +26,25 @@
         occurredAt: new Date().toISOString(),
         ...payload
       };
-      fetch(`${this.apiUrl}/api/logs`, {
+/*      fetch(`${this.apiUrl}/api/logs`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify(body),
+        keepalive: true
+      });*/
+      const url = new URL(`${this.apiUrl}/api/logs`);
+      url.searchParams.set('projectId', this.projectKey);
+      url.searchParams.set('visitorId', visitorId);
+
+      fetch(url.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // 컨트롤러가 @RequestBody 로 받는 건 eventType, occurredAt, plus 나머지 페이로드
+        body: JSON.stringify({
+          eventType,
+          occurredAt: new Date().toISOString(),
+          ...payload
+        }),
         keepalive: true
       });
     },
