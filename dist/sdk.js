@@ -10,28 +10,37 @@
 
       await this._ensureVisitorId();
 
-      this._sendEvent('page_view', { pageUrl: location.href });
+      this._conditions = await this._fetchConditions();
+
+      this._checkAndSend('page_view', { pageUrl: location.href });
       this._bindStayTime();
       this._bindScrollDepth(this.scrollThresh);
       this._bindClicks();
     },
 
+    async _fetchConditions() {
+        try {
+            const res = await fetch(`${this.apiUrl}/api/conditions/${this.projectKey}`);
+            if (!res.ok) throw new Error('조건 조회 실패');
+            return await res.json();
+        } catch (err) {
+          console.warn('조건 조회 중 오류 발생', err);
+          return [];
+        }
+    },
+
+    _checkAndSend(eventType, data) {
+      const matched = this._conditions.find(c => c.eventType === eventType && c.pageUrl === location.href);
+      if (!matched) return;
+
+      const payload = { ...data, conditionId: matched.id };
+      this._sendEvent(eventType, payload);
+    },
+
     _sendEvent(eventType, payload = {}) {
       const visitorId = this._getVisitorId();
       if (!visitorId) return;  // 발급 실패 시 무시
-      const body = {
-        projectId: this.projectKey,
-        visitorId,
-        eventType,
-        occurredAt: new Date().toISOString(),
-        ...payload
-      };
-/*      fetch(`${this.apiUrl}/api/logs`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(body),
-        keepalive: true
-      });*/
+
       const url = new URL(`${this.apiUrl}/api/logs`);
       url.searchParams.set('projectId', this.projectKey);
       url.searchParams.set('visitorId', visitorId);
@@ -39,7 +48,6 @@
       fetch(url.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // 컨트롤러가 @RequestBody 로 받는 건 eventType, occurredAt, plus 나머지 페이로드
         body: JSON.stringify({
           eventType,
           occurredAt: new Date().toISOString(),
@@ -53,7 +61,7 @@
       const start = Date.now();
       window.addEventListener('beforeunload', () => {
         const duration = Date.now() - start;
-        this._sendEvent('stay_time', { durationMs: duration });
+        this._checkAndSend('stay_time', { durationMs: duration });
       });
     },
 
@@ -62,10 +70,10 @@
       window.addEventListener('scroll', () => {
         if (fired) return;
         const scrolled = window.scrollY + window.innerHeight;
-        const total    = document.documentElement.scrollHeight;
+        const total = document.documentElement.scrollHeight;
         if (scrolled / total >= threshold) {
           fired = true;
-          this._sendEvent('scroll_depth', { depthRatio: threshold });
+          this._checkAndSend('scroll_depth', { depthRatio: threshold });
         }
       });
     },
@@ -75,7 +83,7 @@
         const t = e.target, tag = t.tagName.toLowerCase();
         let label = t.id ? `#${t.id}` : t.name ? `[name=${t.name}]`
                   : t.innerText?.trim().slice(0,20) || '';
-        this._sendEvent('click', { element: tag, label });
+        this._checkAndSend('click', { element: tag, label });
       });
     },
 
@@ -87,13 +95,13 @@
       if (!vid) {
         const res = await fetch(
           `${this.apiUrl}/api/visitors?projectId=${this.projectKey}`,
-          { method: 'POST' }
+          { method: 'POST'}
         );
         if (!res.ok) {
           console.warn('visitor 발급 실패', res.status);
           return;
         }
-        const { id } = await res.json();
+        const { id } = await res.json;
         vid = id;
         localStorage.setItem(key, vid);
         document.cookie = `visitorId=${vid}; path=/;`;
