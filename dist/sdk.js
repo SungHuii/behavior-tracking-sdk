@@ -4,7 +4,7 @@
 
   const SDK = {
     async init({ apiUrl, projectKey, scrollThreshold = 0.3 }) {
-      this.apiUrl       = apiUrl.replace(/\/+$/, '');
+      this.apiUrl       = apiUrl.replace(/\/+\$/, '');
       this.projectKey   = projectKey;
       this.scrollThresh = scrollThreshold;
 
@@ -39,7 +39,7 @@
 
     _sendEvent(eventType, payload = {}) {
       const visitorId = this._getVisitorId();
-      if (!visitorId) return;  // 발급 실패 시 무시
+      if (!visitorId) return;
 
       const url = new URL(`${this.apiUrl}/api/logs`);
       url.searchParams.set('projectId', this.projectKey);
@@ -58,10 +58,14 @@
     },
 
     _bindStayTime() {
-      const start = Date.now();
-      window.addEventListener('beforeunload', () => {
-        const duration = Date.now() - start;
-        this._checkAndSend('stay_time', { durationMs: duration });
+      const stayConditions = this._conditions.filter(c => c.eventType === 'stay_time' && c.pageUrl === location.href);
+      stayConditions.forEach(condition => {
+        setTimeout(() => {
+          this._sendEvent('stay_time', {
+            durationMs: condition.threshold * 1000,
+            conditionId: condition.id
+          });
+        }, condition.threshold * 1000);
       });
     },
 
