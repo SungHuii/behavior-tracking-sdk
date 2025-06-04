@@ -101,7 +101,7 @@
           console.warn('visitor 발급 실패', res.status);
           return;
         }
-        const { id } = await res.json;
+        const { id } = await res.json();
         vid = id;
         localStorage.setItem(key, vid);
         document.cookie = `visitorId=${vid}; path=/;`;
