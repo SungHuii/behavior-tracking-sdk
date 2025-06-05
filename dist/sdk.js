@@ -33,7 +33,7 @@
       const matched = this._conditions.find(c => c.eventType === eventType && c.pageUrl === location.href);
       if (!matched) return;
 
-      const payload = { ...data, conditionId: matched.id };
+      const payload = { pageUrl: location.href, ...data, conditionId: matched.id };
       this._sendEvent(eventType, payload);
     },
 
@@ -61,9 +61,8 @@
       const stayConditions = this._conditions.filter(c => c.eventType === 'stay_time' && c.pageUrl === location.href);
       stayConditions.forEach(condition => {
         setTimeout(() => {
-          this._sendEvent('stay_time', {
-            durationMs: condition.threshold * 1000,
-            conditionId: condition.id
+          this._checkAndSend('stay_time', {
+            durationMs: condition.threshold * 1000
           });
         }, condition.threshold * 1000);
       });
