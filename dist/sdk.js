@@ -2,19 +2,24 @@
   'use strict';
 
   const SDK = {
-    async init({ apiUrl, projectKey, scrollThreshold = 0.3 }) {
-      const sdkScript = document.querySelector('script[src*="sdk.js"]');
-      const injectedApiUrl = sdkScript?.dataset.apiUrl;
+    async init(config = {}) {
+      const scriptTag = document.currentScript;
 
-      const host = location.hostname || 'localhost';
-      this.apiUrl = injectedApiUrl || (
-        host.includes('localhost') ? 'http://localhost:8080' : 'https://sdk-behavior-trigger-mvp.onrender.com'
-      );
+      // 1. 기본 속성 수집
+      const projectKey     = config.projectKey || scriptTag?.dataset.key;
+      const injectedApiUrl = config.apiUrl || scriptTag?.dataset.api;
 
-      this.projectKey   = projectKey;
-      this.scrollThresh = scrollThreshold;
-      this.domain       = host;
+      // 2. apiUrl 분기 처리
+      const host = location.hostname;
+      const defaultApiUrl = host.includes('localhost')
+        ? 'http://localhost:8080'
+        : 'https://sdk-behavior-trigger-mvp.onrender.com';
 
+      this.apiUrl     = injectedApiUrl || defaultApiUrl;
+      this.projectKey = projectKey;
+      this.scrollThresh = config.scrollThreshold || 0.3;
+
+      // 3. 이후 로직 (visitorId 발급 → 조건 조회 → 로그 전송 등)
       await this._ensureVisitorId();
       this._conditions = await this._fetchConditions();
 
