@@ -1,15 +1,21 @@
-// sdk.js
 (function(window) {
   'use strict';
 
   const SDK = {
     async init({ apiUrl, projectKey, scrollThreshold = 0.3 }) {
-      this.apiUrl       = apiUrl.replace(/\/+\$/, '');
+      const sdkScript = document.querySelector('script[src*="sdk.js"]');
+      const injectedApiUrl = sdkScript?.dataset.apiUrl;
+
+      const host = location.hostname;
+      this.apiUrl = injectedApiUrl || (
+        host.includes('localhost') ? 'http://localhost:8080' : 'https://sdk-behavior-trigger-mvp.onrender.com'
+      );
+
       this.projectKey   = projectKey;
       this.scrollThresh = scrollThreshold;
+      this.domain       = host;
 
       await this._ensureVisitorId();
-
       this._conditions = await this._fetchConditions();
 
       this._checkAndSend('page_view', { pageUrl: location.href });
@@ -19,14 +25,19 @@
     },
 
     async _fetchConditions() {
-        try {
-            const res = await fetch(`${this.apiUrl}/api/conditions/${this.projectKey}`);
-            if (!res.ok) throw new Error('조건 조회 실패');
-            return await res.json();
-        } catch (err) {
-          console.warn('조건 조회 중 오류 발생', err);
-          return [];
-        }
+      try {
+        const res = await fetch(`${this.apiUrl}/api/conditions/${this.projectKey}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Domain': this.domain
+          }
+        });
+        if (!res.ok) throw new Error('조건 조회 실패');
+        return await res.json();
+      } catch (err) {
+        console.warn('조건 조회 중 오류 발생', err);
+        return [];
+      }
     },
 
     _checkAndSend(eventType, data) {
@@ -47,7 +58,10 @@
 
       fetch(url.toString(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Domain': this.domain
+        },
         body: JSON.stringify({
           eventType,
           occurredAt: new Date().toISOString(),
@@ -98,7 +112,12 @@
       if (!vid) {
         const res = await fetch(
           `${this.apiUrl}/api/visitors?projectId=${this.projectKey}`,
-          { method: 'POST'}
+          {
+            method: 'POST',
+            headers: {
+              'X-Domain': this.domain
+            }
+          }
         );
         if (!res.ok) {
           console.warn('visitor 발급 실패', res.status);
