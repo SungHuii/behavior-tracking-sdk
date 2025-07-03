@@ -6,7 +6,7 @@
       const sdkScript = document.querySelector('script[src*="sdk.js"]');
       const injectedApiUrl = sdkScript?.dataset.apiUrl;
 
-      const host = location.hostname;
+      const host = location.hostname || 'localhost';
       this.apiUrl = injectedApiUrl || (
         host.includes('localhost') ? 'http://localhost:8080' : 'https://sdk-behavior-trigger-mvp.onrender.com'
       );
