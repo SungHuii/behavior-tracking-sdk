@@ -19,15 +19,14 @@
         ? 'http://localhost:8080'
         : 'https://sdk-behavior-trigger-mvp.onrender.com';
 
-      this.apiUrl     = injectedApiUrl || defaultApiUrl;
-      this.projectKey = projectKey;
-      this.scrollThresh = config.scrollThreshold || 0.3;
+      this.apiUrl        = injectedApiUrl || defaultApiUrl;
+      this.projectKey    = projectKey;
+      this.scrollThresh  = config.scrollThreshold || 0.3;
 
-      // 2. visitorId 발급 → 조건 조회 → 초기 이벤트 전송
       await this._ensureVisitorId();
       this._conditions = await this._fetchConditions();
 
-      this._checkAndSend('page_view', { pageUrl: location.href });
+      this._checkAndSend('page_view', { pageUrl: this._getFullUrl() });
       this._bindStayTime();
       this._bindScrollDepth(this.scrollThresh);
       this._bindClicks();
@@ -38,25 +37,25 @@
         const res = await fetch(`${this.apiUrl}/api/conditions/${this.projectKey}`, {
           headers: {
             'Content-Type': 'application/json',
-            'X-Domain': location.origin
+            'X-Domain': this._getFullUrl()
           }
         });
         if (!res.ok) throw new Error('조건 조회 실패');
         return await res.json();
       } catch (err) {
-        console.warn('조건 조회 중 오류 발생', err);
+        console.warn('[SDK] 조건 조회 중 오류 발생', err);
         return [];
       }
     },
 
     _checkAndSend(eventType, data) {
-      const cleanUrl = this._getCleanUrl();
+      const url = this._getFullUrl();
       const matched = this._conditions.find(
-        c => c.eventType === eventType && c.pageUrl === cleanUrl
+        c => c.eventType === eventType && c.pageUrl === url
       );
       if (!matched) return;
 
-      const payload = { pageUrl: cleanUrl, ...data, conditionId: matched.id };
+      const payload = { pageUrl: url, ...data, conditionId: matched.id };
       this._sendEvent(eventType, payload);
     },
 
@@ -72,7 +71,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Domain': location.origin
+          'X-Domain': this._getFullUrl()
         },
         body: JSON.stringify({
           eventType,
@@ -84,9 +83,9 @@
     },
 
     _bindStayTime() {
-      const currentUrl = this._getCleanUrl();
+      const url = this._getFullUrl();
       const stayConditions = this._conditions.filter(
-        c => c.eventType === 'stay_time' && c.pageUrl === currentUrl
+        c => c.eventType === 'stay_time' && c.pageUrl === url
       );
 
       stayConditions.forEach(condition => {
@@ -136,7 +135,7 @@
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'X-Domain': location.origin
+                'X-Domain': this._getFullUrl()
               }
             }
           );
@@ -160,7 +159,7 @@
       );
     },
 
-    _getCleanUrl() {
+    _getFullUrl() {
       return location.origin + location.pathname;
     }
   };
