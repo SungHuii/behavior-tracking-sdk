@@ -5,11 +5,9 @@
     async init(config = {}) {
       const scriptTag = document.currentScript;
 
-      // 1. 기본 속성 수집
       const projectKey     = config.projectKey || scriptTag?.dataset.key;
       const injectedApiUrl = config.apiUrl || scriptTag?.dataset.api;
 
-      // 2. apiUrl 분기 처리
       const host = location.hostname;
       const defaultApiUrl = host.includes('localhost')
         ? 'http://localhost:8080'
@@ -19,11 +17,10 @@
       this.projectKey = projectKey;
       this.scrollThresh = config.scrollThreshold || 0.3;
 
-      // 3. 이후 로직 (visitorId 발급 → 조건 조회 → 로그 전송 등)
       await this._ensureVisitorId();
       this._conditions = await this._fetchConditions();
 
-      this._checkAndSend('page_view', { pageUrl: location.href });
+      this._checkAndSend('page_view', { pageUrl: this._getCleanUrl() });
       this._bindStayTime();
       this._bindScrollDepth(this.scrollThresh);
       this._bindClicks();
@@ -46,10 +43,13 @@
     },
 
     _checkAndSend(eventType, data) {
-      const matched = this._conditions.find(c => c.eventType === eventType && c.pageUrl === location.href);
+      const currentUrl = this._getCleanUrl();
+      const matched = this._conditions.find(
+        c => c.eventType === eventType && c.pageUrl === currentUrl
+      );
       if (!matched) return;
 
-      const payload = { pageUrl: location.href, ...data, conditionId: matched.id };
+      const payload = { pageUrl: currentUrl, ...data, conditionId: matched.id };
       this._sendEvent(eventType, payload);
     },
 
@@ -77,7 +77,10 @@
     },
 
     _bindStayTime() {
-      const stayConditions = this._conditions.filter(c => c.eventType === 'stay_time' && c.pageUrl === location.href);
+      const currentUrl = this._getCleanUrl();
+      const stayConditions = this._conditions.filter(
+        c => c.eventType === 'stay_time' && c.pageUrl === currentUrl
+      );
       stayConditions.forEach(condition => {
         setTimeout(() => {
           this._checkAndSend('stay_time', {
@@ -88,6 +91,7 @@
     },
 
     _bindScrollDepth(threshold) {
+      const currentUrl = this._getCleanUrl();
       let fired = false;
       window.addEventListener('scroll', () => {
         if (fired) return;
@@ -139,6 +143,10 @@
       return localStorage.getItem('visitorId')
           || document.cookie.match(/visitorId=([^;]+)/)?.[1]
           || null;
+    },
+
+    _getCleanUrl() {
+      return location.origin + location.pathname;
     }
   };
 
