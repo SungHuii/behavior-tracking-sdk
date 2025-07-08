@@ -5,9 +5,10 @@
     async init(config = {}) {
       const scriptTag = document.currentScript;
 
-      // 1. 설정 정보 수집
       const projectKey     = config.projectKey || scriptTag?.dataset.key;
       const injectedApiUrl = config.apiUrl     || scriptTag?.dataset.api;
+      const collectEmail   = config.collectEmail !== true; // 기본값 true
+      const emailKey       = config.emailKey || '__USER_EMAIL__';
 
       if (!projectKey) {
         console.warn('[SDK] projectKey가 없습니다.');
@@ -19,13 +20,16 @@
         ? 'http://localhost:8080'
         : 'https://sdk-behavior-trigger-mvp.onrender.com';
 
-      this.apiUrl        = injectedApiUrl || defaultApiUrl;
-      this.projectKey    = projectKey;
-      this.scrollThresh  = config.scrollThreshold || 0.3;
+      this.apiUrl       = injectedApiUrl || defaultApiUrl;
+      this.projectKey   = projectKey;
+      this.scrollThresh = config.scrollThreshold || 0.3;
+      this.collectEmail = collectEmail;
+      this.emailKey     = emailKey;
 
       await this._ensureVisitorId();
-      this._conditions = await this._fetchConditions();
+      if (this.collectEmail) await this._maybeUpdateEmail();
 
+      this._conditions = await this._fetchConditions();
       this._checkAndSend('page_view', { pageUrl: this._getFullUrl() });
       this._bindStayTime();
       this._bindScrollDepth(this.scrollThresh);
@@ -148,6 +152,38 @@
         } catch (e) {
           console.warn('[SDK] visitor 발급 실패', e);
         }
+      }
+    },
+
+    async _maybeUpdateEmail() {
+      const visitorId = this._getVisitorId();
+      if (!visitorId) return;
+
+      try {
+        const res = await fetch(`${this.apiUrl}/api/visitors/${visitorId}`);
+        if (!res.ok) return;
+
+        const existing = await res.json();
+        if (existing?.email || localStorage.getItem('emailSynced')) return;
+
+        const email = window[this.emailKey];
+        if (!email || typeof email !== 'string' || !email.includes('@')) return;
+
+        const update = await fetch(`${this.apiUrl}/api/visitors/${visitorId}/email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Domain': this._getFullUrl()
+          },
+          body: JSON.stringify({ email })
+        });
+
+        if (update.ok) {
+          localStorage.setItem('emailSynced', '1');
+          console.log('[SDK] 이메일 수집 완료');
+        }
+      } catch (err) {
+        console.warn('[SDK] 이메일 수집 실패', err);
       }
     },
 
