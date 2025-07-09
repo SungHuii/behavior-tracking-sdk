@@ -7,7 +7,7 @@
 
       const projectKey     = config.projectKey || scriptTag?.dataset.key;
       const injectedApiUrl = config.apiUrl     || scriptTag?.dataset.api;
-      const collectEmail   = config.collectEmail !== true; // 기본값 true
+      const collectEmail   = config.collectEmail !== false; // 기본값 true
       const emailKey       = config.emailKey || '__USER_EMAIL__';
 
       if (!projectKey) {
