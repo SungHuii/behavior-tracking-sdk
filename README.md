@@ -1,4 +1,4 @@
-# 📊 Behavior Tracking SDK
+# Behavior Tracking SDK
 
 > 웹사이트 방문자의 행동을 감지하고 자동화 마케팅 트리거를 작동시키는 JavaScript SDK입니다.
 
@@ -7,7 +7,7 @@
 
 ---
 
-## 🚀 설치 및 사용법
+## 설치 및 사용법
 
 ```html
 <script 
@@ -31,7 +31,7 @@ BehaviorSDK.init({
 
 ---
 
-## 🧠 작동 방식
+## 작동 방식
 
 - 방문자 식별 (visitorId 발급 및 저장)
 - 조건 목록 조회 (`/api/conditions/{projectKey}`)
@@ -40,7 +40,7 @@ BehaviorSDK.init({
 
 ---
 
-## 📦 주요 기능 정리
+## 주요 기능 정리
 
 | 기능            | 설명 |
 |------------------|------|
@@ -51,11 +51,11 @@ BehaviorSDK.init({
 
 ---
 
-## ✉️ 이메일 수집 가이드 (Project Owner용)
+## 이메일 수집 가이드 (Project Owner용)
 
 > SDK를 사용하는 웹사이트에서 사용자 이메일을 수집하려면 다음 중 하나를 설정하세요.
 
-### 📌 전역 변수 방식 (기본)
+### 전역 변수 방식 (기본)
 
 ```html
 <script>
@@ -63,7 +63,7 @@ BehaviorSDK.init({
 </script>
 ```
 
-### 📌 커스텀 전역 변수 사용
+### 커스텀 전역 변수 사용
 
 ```js
 BehaviorSDK.init({
@@ -74,7 +74,7 @@ BehaviorSDK.init({
 // window.MY_EMAIL_KEY = 'user@example.com';
 ```
 
-### 📌 이메일 수집 비활성화
+### 이메일 수집 비활성화
 
 ```js
 BehaviorSDK.init({
@@ -85,7 +85,7 @@ BehaviorSDK.init({
 
 ---
 
-## 🔐 개인정보 고지 예시
+## 개인정보 고지
 
 > 본 사이트는 행동 기반 자동 메시지 발송을 위해 VisiLog SDK를 사용하며,  
 > 로그인된 이메일 정보를 수집할 수 있습니다.  
@@ -93,7 +93,7 @@ BehaviorSDK.init({
 
 ---
 
-## ✅ 체크리스트
+## 체크리스트
 
 | 항목 | 체크 |
 | --- | --- |
@@ -105,7 +105,7 @@ BehaviorSDK.init({
 
 ---
 
-## 🙋‍♂️ 만든 사람
+## 만든 사람
 
 - GitHub: [@SungHuii](https://github.com/SungHuii)
 - 이메일: gkemg2017@gmail.com
