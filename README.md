@@ -97,11 +97,11 @@ BehaviorSDK.init({
 
 | 항목 | 체크 |
 | --- | --- |
-| [ ] `window.__USER_EMAIL__` 또는 커스텀 변수 설정 |
-| [ ] SDK 코드보다 먼저 이메일 변수 삽입 |
-| [ ] 이메일 수집 비활성화 시 `collectEmail: false` 적용 |
-| [ ] 개인정보 고지 포함 |
-| [ ] 이메일 수집 여부 확인: `localStorage.getItem('emailSynced') === "1"` |
+|  `window.__USER_EMAIL__` 또는 커스텀 변수 설정 |
+|  SDK 코드보다 먼저 이메일 변수 삽입 |
+|  이메일 수집 비활성화 시 `collectEmail: false` 적용 |
+|  개인정보 고지 포함 |
+|  이메일 수집 여부 확인: `localStorage.getItem('emailSynced') === "1"` |
 
 ---
 
